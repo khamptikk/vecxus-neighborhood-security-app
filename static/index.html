@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#07090d">
+  <title>VECXUS — Seguridad Vecinal</title>
+  <meta name="description" content="Reporta incidentes en tu zona en segundos. Sin cuentas, sin registro. Reporta. Corrobora. Verifica.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Loading -->
+  <div id="loading-screen" class="fixed inset-0 flex items-center justify-center" style="height:100dvh;background:#07090d">
+    <div class="flex flex-col items-center gap-4">
+      <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15">
+        <span class="h-6 w-6 animate-ping rounded-full bg-red-500/70"></span>
+      </div>
+      <p class="text-[13px] font-black tracking-[0.25em] text-slate-400">VECXUS</p>
+      <p class="text-[11px] font-semibold tracking-widest text-slate-600">CARGANDO MAPA…</p>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div id="map" class="vx-dark-tiles fixed inset-0" style="background:#0a0d12"></div>
+
+  <!-- Header -->
+  <header id="main-header" class="pointer-events-none absolute inset-x-0 top-0 z-[1100] px-4 pt-4">
+    <div class="vx-drop flex items-start justify-between gap-3">
+      <div class="pointer-events-auto rounded-2xl border border-white/10 bg-[#0b0e14]/85 px-4 py-3 shadow-xl shadow-black/40 backdrop-blur-xl">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/15 text-red-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <h1 class="text-[19px] font-black tracking-[0.14em] text-white">VECXUS</h1>
+        </div>
+        <p class="mt-1 text-[9px] font-bold tracking-[0.3em] text-slate-500">REPORTA · CORROBORA · VERIFICA</p>
+      </div>
+      <div class="pointer-events-auto flex flex-col items-end gap-2">
+        <button id="locate-btn" aria-label="Mi ubicación" class="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#0b0e14]/85 text-slate-200 shadow-xl shadow-black/40 backdrop-blur-xl transition hover:bg-white/10 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="2" y2="2"/><line x1="12" x2="12" y1="22" y2="2"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/></svg>
+        </button>
+        <div class="rounded-xl border border-white/10 bg-[#0b0e14]/85 px-3 py-2 text-center shadow-xl shadow-black/40 backdrop-blur-xl">
+          <div id="active-count" class="text-[15px] font-black leading-none text-red-400 tabular-nums">0</div>
+          <div id="active-label" class="mt-0.5 text-[8.5px] font-bold tracking-[0.18em] text-slate-500">INCIDENTES</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Pick mode banner -->
+  <div id="pick-banner" class="vx-drop absolute inset-x-4 top-24 z-[1100] mx-auto max-w-md" style="display:none">
+    <div class="flex items-center gap-2.5 rounded-2xl border border-red-500/30 bg-[#1a0d10]/92 px-4 py-3 shadow-xl shadow-black/50 backdrop-blur-xl">
+      <svg class="shrink-0 animate-bounce text-red-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      <p class="text-[13.5px] font-bold leading-snug text-red-100">Toca el mapa para marcar dónde ocurre el incidente</p>
+    </div>
+  </div>
+
+  <!-- Report button -->
+  <div id="report-btn" class="pointer-events-none absolute inset-x-0 bottom-0 z-[1100] px-5 pb-8" style="display:block">
+    <div class="mx-auto max-w-sm">
+      <button id="start-report-btn" class="vx-glow-red vx-drop pointer-events-auto flex w-full items-center justify-center gap-3 rounded-[22px] bg-gradient-to-b from-red-500 to-red-700 py-5 text-[19px] font-black tracking-[0.12em] text-white transition hover:from-red-400 hover:to-red-600 active:scale-[.97]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        REPORTAR
+      </button>
+      <p class="mt-2.5 text-center text-[11px] font-semibold tracking-wide text-slate-500">Sin registro · Reporta en segundos</p>
+    </div>
+  </div>
+
+  <!-- Pick mode bar -->
+  <div id="pick-bar" class="absolute inset-x-0 bottom-0 z-[1100] px-5 pb-8" style="display:none">
+    <div class="vx-sheet mx-auto flex max-w-sm gap-2.5">
+      <button id="cancel-pick-btn" class="flex h-14 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-[#0b0e14]/90 px-5 text-[14px] font-bold text-slate-300 backdrop-blur-xl transition hover:bg-white/10 active:scale-[.97]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancelar
+      </button>
+      <button id="confirm-pick-btn" class="vx-glow-red flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-red-500 to-red-700 text-[15px] font-extrabold tracking-wide text-white transition active:scale-[.97] disabled:opacity-40 disabled:shadow-none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        Confirmar ubicación
+      </button>
+    </div>
+  </div>
+
+  <!-- Report form overlay -->
+  <div id="report-form-overlay" class="absolute inset-0 z-[1200] flex flex-col justify-end" style="display:none">
+    <button class="vx-fade absolute inset-0 bg-black/55 backdrop-blur-[2px]" onclick="this.parentElement.style.display='none';cancelReport()"></button>
+    <div class="form-content vx-sheet relative rounded-t-[28px] border-t border-white/10 bg-[#0c0f16]/97 px-5 pb-7 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,.7)] backdrop-blur-xl">
+    </div>
+  </div>
+
+  <!-- Incident sheet overlay -->
+  <div id="incident-sheet-overlay" class="absolute inset-0 z-[1200] flex flex-col justify-end" style="display:none">
+    <button class="vx-fade absolute inset-0 bg-black/45" onclick="selectedId=null;clearRoute();closeIncidentSheet();updateMarkers()"></button>
+    <div id="incident-sheet-content"></div>
+  </div>
+
+  <!-- GPS overlay -->
+  <div id="gps-overlay" class="pointer-events-none fixed inset-0 z-[1250]" style="display:none"></div>
+
+  <!-- Toast -->
+  <div class="pointer-events-none absolute inset-x-0 bottom-28 z-[1300] flex justify-center px-6">
+    <div id="toast" class="vx-toast max-w-sm rounded-2xl border px-4 py-3 text-center text-[13px] font-bold shadow-2xl backdrop-blur-xl" style="display:none"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    // Hide loading screen when map is ready
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        const ls = document.getElementById("loading-screen");
+        if (ls) ls.style.display = "none";
+      }, 800);
+    });
+  </script>
+</body>
+</html>
