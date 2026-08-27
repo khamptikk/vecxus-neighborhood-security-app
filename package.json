@@ -2,7 +2,7 @@
   "name": "vecxus-static",
   "private": true,
   "scripts": {
-    "dev": "npx serve static -l 3000",
-    "start": "npx serve static -l 3000"
+    "dev": "npx serve . -l 3000",
+    "start": "npx serve . -l 3000"
   }
 }
